@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
+from bson import ObjectId
 
 class NoteBase(BaseModel):
     date: str
@@ -16,3 +17,11 @@ class NoteInDBBase(NoteBase):
 
     class Config:
         orm_mode = True
+        allow_population_by_field_name = True
+        json_encoders = {
+            ObjectId: str
+        }
+
+    @validator('id', pre=True, allow_reuse=True)
+    def convert_id(cls, v):
+        return str(v)
