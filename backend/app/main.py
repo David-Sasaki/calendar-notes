@@ -1,8 +1,8 @@
+from bson import ObjectId
 from fastapi import FastAPI, HTTPException
+from typing import List
 from .models import NoteCreate, NoteInDBBase, NoteUpdate
 from . import models, database
-from typing import List
-from bson import ObjectId
 
 app = FastAPI()
 
