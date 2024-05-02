@@ -1,46 +1,94 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DaysGrid from "./DaysGrid";
-import MonthNavigation from "./MonthNavigation";
-import NotesPopup from "../notes/NotesPopup";
-import { useAppSelector } from "../../app/hooks";
-import { selectNotes } from "../notes/notesSlice";
+import Navigation from "./Navigation";
 
 const Calendar: React.FC = () => {
-  const [month, setMonth] = useState(`${new Date().getMonth() + 1}`);
-  const [year, setYear] = useState(`${new Date().getFullYear()}`);
-  const notes = useAppSelector(selectNotes);
+  const GridSize: number = 35; // 5 weeks
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth());
+  const [startDate, setStartDate] = useState(new Date());
+  const [days, setDays] = useState(Array(GridSize).fill(0));
+  const [clickables, setClickables] = useState(Array(GridSize).fill(false));
 
-  const handleMonthChange = (newMonth: string) => {
-    setMonth(newMonth);
+  const getPreviousDay = (date: Date) => {
+    const previousDate = new Date(date.getTime());
+    previousDate.setDate(date.getDate() - 1);
+    return previousDate;
   };
 
-  const handleYearChange = (newYear: string) => {
+  const getNextDay = (date: Date) => {
+    const nextDate = new Date(date.getTime());
+    nextDate.setDate(date.getDate() + 1);
+    return nextDate;
+  };
+
+  useEffect(() => {
+    let firstDay = new Date(year, month, 1);
+    while (true) {
+      if (firstDay.getDay() === 0) break;
+      firstDay = getPreviousDay(firstDay);
+    }
+    setStartDate(firstDay);
+  }, [year, month]);
+
+  const getDays = () => {
+    let firstDay = startDate;
+    let newDays = Array(GridSize).fill(0);
+    for (let i = 0; i < GridSize; i++) {
+      newDays[i] = firstDay.getDate();
+      firstDay = getNextDay(firstDay);
+    }
+    return newDays;
+  };
+
+  const getClickables = () => {
+    let firstDay = startDate;
+    let newClickables = Array(GridSize).fill(false);
+    for (let i = 0; i < GridSize; i++) {
+      newClickables[i] = firstDay.getMonth() === month;
+      firstDay = getNextDay(firstDay);
+    }
+    return newClickables;
+  };
+
+  useEffect(() => {
+    setDays(getDays());
+    setClickables(getClickables());
+  }, [startDate]);
+
+  const handlePreviousMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear(year - 1);
+    } else {
+      setMonth(month - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear(year + 1);
+    } else {
+      setMonth(month + 1);
+    }
+  };
+
+  const handleYearSelect = (newYear: number) => {
     setYear(newYear);
   };
 
-  const days = Array.from({ length: 31 }, (_, i) => i + 1); // Simplified; should adjust based on month/year
-  const notesCounts = notes.reduce((acc, note) => {
-    const day = parseInt(note.date.split("-")[2], 10); // Assuming date format is "YYYY-MM-DD"
-    (acc as Array<number>)[day] = ((acc as Array<number>)[day] || 0) + 1;
-    return acc;
-  }, {});
-
-  const handleDayClick = () => {};
-
   return (
     <div>
-      <MonthNavigation
-        month={month}
+      <Navigation
         year={year}
-        onMonthChange={handleMonthChange}
-        onYearChange={handleYearChange}
+        month={month}
+        onYearSelect={handleYearSelect}
+        onPreviousMonth={handlePreviousMonth}
+        onNextMonth={handleNextMonth}
       />
       <div className="mt-4">
-        <DaysGrid
-          days={days}
-          notesCounts={notesCounts}
-          onDayClick={handleDayClick}
-        />
+        <DaysGrid days={days} clickables={clickables} />
       </div>
     </div>
   );
